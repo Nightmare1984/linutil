@@ -10,17 +10,17 @@ setuplact() {
         return
     fi
 
-    checkAurHelper
+    checkAURHelper
 
-    for helper in "${AUR_HELPERS[@]}"; do
-        if command -v "${helper}" &> /dev/null; then
+    for helper in yay paru trizen; do
+        if command_exists "${helper}"; then
             echo "Using AUR helper: ${helper}"
             ${helper} -S --noconfirm lact
             return
         fi
     done
 
-    echo "${RED}No suitable AUR helper found to install Lact!${RC}"
+    echo -e "${RED}No suitable AUR helper found to install Lact!${RC}"
     exit 1
 }
 

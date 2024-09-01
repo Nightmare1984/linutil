@@ -93,6 +93,18 @@ checkDistro() {
     fi
 }
 
+checkAurHelper() {
+    AUR_HELPERS=('yay' 'paru' 'trizen' 'pikaur' 'aura')
+    for helper in "${AUR_HELPERS}"; do
+        if command -v "${helper}" &> /dev/null; then
+            echo "Found AUR helper: ${helper}"
+            return 0
+        fi
+    done
+    echo "${RED}No AUR helper found! Please install one of the following: ${AUR_HELPERS[*]}${RC}"
+    exit 1
+}
+
 checkEnv() {
     checkCommandRequirements 'curl groups sudo'
     checkPackageManager 'apt-get nala dnf pacman zypper yum xbps-install nix-env'
@@ -100,4 +112,5 @@ checkEnv() {
     checkSuperUser
     checkDistro
     checkEscalationTool
+    checkAurHelper
 }

@@ -9,7 +9,7 @@ setuplact() {
         echo "Lact is Already installed."
     
          case ${AUR_HELPERS} in
-            pacman)
+            paru)
               ${AUR_HELPERS} -S --noconfirm lact
               ;;
             *)  

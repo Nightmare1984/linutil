@@ -18,6 +18,5 @@ setuplact() {
     fi
 }
 
-checkEnv
 checkAurHelper
 setuplact

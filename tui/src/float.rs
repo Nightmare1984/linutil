@@ -50,21 +50,13 @@ impl Float {
 
     pub fn draw(&mut self, frame: &mut Frame, parent_area: Rect) {
         let popup_area = self.floating_window(parent_area);
-
-        let content_area = Rect {
-            x: popup_area.x,
-            y: popup_area.y,
-            width: popup_area.width,
-            height: popup_area.height,
-        };
-
-        self.content.draw(frame, content_area);
+        self.content.draw(frame, popup_area);
     }
 
     // Returns true if the floating window is finished.
     pub fn handle_key_event(&mut self, key: &KeyEvent) -> bool {
         match key.code {
-            KeyCode::Enter | KeyCode::Char('p') | KeyCode::Esc | KeyCode::Char('q')
+            KeyCode::Enter | KeyCode::Char('p') | KeyCode::Char('d') | KeyCode::Esc
                 if self.content.is_finished() =>
             {
                 true

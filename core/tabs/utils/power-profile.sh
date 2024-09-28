@@ -31,13 +31,10 @@ installAutoCpufreq() {
             git clone https://github.com/AdnanHodzic/auto-cpufreq.git
         fi
 
-        case "$PACKAGER" in
-            *)
-                cd auto-cpufreq
-                printf "%b\n" "${YELLOW}Running auto-cpufreq installer...${RC}"
-                "$ESCALATION_TOOL" ./auto-cpufreq-installer
-                ;;
-        esac
+        cd auto-cpufreq
+        printf "%b\n" "${YELLOW}Running auto-cpufreq installer...${RC}"
+        "$ESCALATION_TOOL" ./auto-cpufreq-installer
+
         cd ..
     fi
 }
@@ -74,7 +71,7 @@ apply_or_remove_auto_cpufreq() {
     # Prompt user for action
     printf "%b\n" "${YELLOW}Do you want to apply the auto-cpufreq tweak or remove it?${RC}"
     printf "%b\n" "${YELLOW}1) Apply tweak${RC}"
-    printf "%b\n"  "${YELLOW}2) Remove tweak${RC}"
+    printf "%b\n" "${YELLOW}2) Remove tweak${RC}"
     printf "%b" "Enter your choice [1/2]: "
     read -r choice
 

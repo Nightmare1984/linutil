@@ -5,25 +5,17 @@
 gitpath="$HOME/.local/share/mybash"
 
 installDepend() {
+    if ! command_exists bash bash-completion tar bat tree unzip fontconfig git; then
     printf "%b\n" "${YELLOW}Installing Bash...${RC}"
     case "$PACKAGER" in
         pacman)
             "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm bash bash-completion tar bat tree unzip fontconfig git
             ;;
-        apt-get|nala)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y bash bash-completion tar bat tree unzip fontconfig git
-            ;;
-        dnf)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y bash bash-completion tar bat tree unzip fontconfig git
-            ;;
-        zypper)
-            "$ESCALATION_TOOL" "$PACKAGER" install -y bash bash-completion tar bat tree unzip fontconfig git
-            ;;
         *)
-            printf "%b\n" "${RED}Unsupported package manager: "$PACKAGER"${RC}" # The packages above were grabbed out of the original mybash-setup-script.
-            exit 1
+            "$ESCALATION_TOOL" "$PACKAGER" install -y bash bash-completion tar bat tree unzip fontconfig git
             ;;
     esac
+    fi
 }
 
 cloneMyBash() {

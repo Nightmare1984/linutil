@@ -9,6 +9,8 @@ use crate::{
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ego_tree::NodeId;
 use linutil_core::{Command, ListNode, Tab};
+#[cfg(feature = "tips")]
+use rand::Rng;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Style, Stylize},
@@ -19,6 +21,20 @@ use ratatui::{
 
 const MIN_WIDTH: u16 = 77;
 const MIN_HEIGHT: u16 = 19;
+const TITLE: &str = concat!("Linux Toolbox - ", env!("BUILD_DATE"));
+const ACTIONS_GUIDE: &str = "List of important tasks performed by commands' names:
+
+D  - disk modifications (ex. partitioning) (privileged)
+FI - flatpak installation
+FM - file modification
+I  - installation (privileged)
+MP - package manager actions
+SI - full system installation
+SS - systemd actions (privileged) 
+RP - package removal
+
+P* - privileged *
+";
 
 pub struct AppState {
     /// Selected theme
@@ -39,6 +55,8 @@ pub struct AppState {
     multi_select: bool,
     selected_commands: Vec<Command>,
     drawable: bool,
+    #[cfg(feature = "tips")]
+    tip: &'static str,
 }
 
 pub enum Focus {
@@ -69,6 +87,8 @@ impl AppState {
             multi_select: false,
             selected_commands: Vec::new(),
             drawable: false,
+            #[cfg(feature = "tips")]
+            tip: get_random_tip(),
         };
         state.update_items();
         state
@@ -77,42 +97,30 @@ impl AppState {
         let terminal_size = frame.area();
 
         if terminal_size.width < MIN_WIDTH || terminal_size.height < MIN_HEIGHT {
-            let size_warning_message = format!(
+            let warning = Paragraph::new(format!(
                 "Terminal size too small:\nWidth = {} Height = {}\n\nMinimum size:\nWidth = {}  Height = {}",
                 terminal_size.width,
                 terminal_size.height,
                 MIN_WIDTH,
                 MIN_HEIGHT,
-            );
-
-            let warning_paragraph = Paragraph::new(size_warning_message.clone())
+            ))
                 .alignment(Alignment::Center)
                 .style(Style::default().fg(ratatui::style::Color::Red).bold())
                 .wrap(ratatui::widgets::Wrap { trim: true });
 
-            // Get the maximum width and height of text lines
-            let text_lines: Vec<String> = size_warning_message
-                .lines()
-                .map(|line| line.to_string())
-                .collect();
-            let max_line_length = text_lines.iter().map(|line| line.len()).max().unwrap_or(0);
-            let num_lines = text_lines.len();
+            let centered_layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Fill(1),
+                    Constraint::Length(5),
+                    Constraint::Fill(1),
+                ])
+                .split(terminal_size);
 
-            // Calculate the centered area
-            let centered_area = ratatui::layout::Rect {
-                x: terminal_size.x + (terminal_size.width - max_line_length as u16) / 2,
-                y: terminal_size.y + (terminal_size.height - num_lines as u16) / 2,
-                width: max_line_length as u16,
-                height: num_lines as u16,
-            };
-            frame.render_widget(warning_paragraph, centered_area);
             self.drawable = false;
+            return frame.render_widget(warning, centered_layout[1]);
         } else {
             self.drawable = true;
-        }
-
-        if !self.drawable {
-            return;
         }
 
         let label_block =
@@ -191,13 +199,21 @@ impl AppState {
             .constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
             .split(horizontal[1]);
 
+        let list_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
+            .split(chunks[1]);
+
         self.filter.draw_searchbar(frame, chunks[0], &self.theme);
 
         let mut items: Vec<Line> = Vec::new();
+        let mut task_items: Vec<Line> = Vec::new();
+
         if !self.at_root() {
             items.push(
                 Line::from(format!("{}  ..", self.theme.dir_icon())).style(self.theme.dir_color()),
             );
+            task_items.push(Line::from(" ").style(self.theme.dir_color()));
         }
 
         items.extend(self.filter.item_list().iter().map(
@@ -231,24 +247,59 @@ impl AppState {
             },
         ));
 
+        task_items.extend(self.filter.item_list().iter().map(
+            |ListEntry {
+                 node, has_children, ..
+             }| {
+                if *has_children {
+                    Line::from(" ").style(self.theme.dir_color())
+                } else {
+                    Line::from(format!("{} ", node.task_list))
+                        .alignment(Alignment::Right)
+                        .style(self.theme.cmd_color())
+                        .bold()
+                }
+            },
+        ));
+
         let style = if let Focus::List = self.focus {
             Style::default().reversed()
         } else {
             Style::new()
         };
 
-        let title = format!(
-            "Linux Toolbox - {} {}",
-            env!("BUILD_DATE"),
-            self.multi_select.then(|| "[Multi-Select]").unwrap_or("")
-        );
+        let title = if self.multi_select {
+            &format!("{} [Multi-Select]", TITLE)
+        } else {
+            TITLE
+        };
+
+        #[cfg(feature = "tips")]
+        let bottom_title = Line::from(self.tip.bold().blue()).right_aligned();
+        #[cfg(not(feature = "tips"))]
+        let bottom_title = "";
+
+        let task_list_title = Line::from("Important Actions ").right_aligned();
 
         // Create the list widget with items
         let list = List::new(items)
             .highlight_style(style)
-            .block(Block::default().borders(Borders::ALL).title(title))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL & !Borders::RIGHT)
+                    .title(title)
+                    .title_bottom(bottom_title),
+            )
             .scroll_padding(1);
-        frame.render_stateful_widget(list, chunks[1], &mut self.selection);
+        frame.render_stateful_widget(list, list_chunks[0], &mut self.selection);
+
+        let disclaimer_list = List::new(task_items).highlight_style(style).block(
+            Block::default()
+                .borders(Borders::ALL & !Borders::LEFT)
+                .title(task_list_title),
+        );
+
+        frame.render_stateful_widget(disclaimer_list, list_chunks[1], &mut self.selection);
 
         if let Focus::FloatingWindow(float) = &mut self.focus {
             float.draw(frame, chunks[1]);
@@ -307,7 +358,7 @@ impl AppState {
             Focus::Search => match self.filter.handle_key(key) {
                 SearchAction::Exit => self.exit_search(),
                 SearchAction::Update => self.update_items(),
-                _ => {}
+                SearchAction::None => {}
             },
             Focus::TabList => match key.code {
                 KeyCode::Enter | KeyCode::Char('l') | KeyCode::Right => self.focus = Focus::List,
@@ -327,6 +378,7 @@ impl AppState {
                 KeyCode::Char('/') => self.enter_search(),
                 KeyCode::Char('t') => self.theme.next(),
                 KeyCode::Char('T') => self.theme.prev(),
+                KeyCode::Char('g') => self.toggle_task_list_guide(),
                 _ => {}
             },
             Focus::List if key.kind != KeyEventKind::Release => match key.code {
@@ -345,6 +397,7 @@ impl AppState {
                 KeyCode::Char('/') => self.enter_search(),
                 KeyCode::Char('t') => self.theme.next(),
                 KeyCode::Char('T') => self.theme.prev(),
+                KeyCode::Char('g') => self.toggle_task_list_guide(),
                 KeyCode::Char('v') | KeyCode::Char('V') => self.toggle_multi_select(),
                 KeyCode::Char(' ') if self.multi_select => self.toggle_selection(),
                 _ => {}
@@ -462,7 +515,8 @@ impl AppState {
     }
 
     pub fn selected_item_is_cmd(&self) -> bool {
-        !self.selected_item_is_dir()
+        // Any item that is not a directory or up directory (..) must be a command
+        !(self.selected_item_is_up_dir() || self.selected_item_is_dir())
     }
     pub fn selected_item_is_up_dir(&self) -> bool {
         let selected_index = self.selection.selected().unwrap_or(0);
@@ -478,12 +532,7 @@ impl AppState {
     }
     fn enable_description(&mut self) {
         if let Some(command_description) = self.get_selected_description() {
-            let description_content: Vec<String> = vec![]
-                .into_iter()
-                .chain(command_description.lines().map(|line| line.to_string())) // New line when \n is given in toml
-                .collect();
-
-            let description = FloatingText::new(description_content, FloatingTextMode::Description);
+            let description = FloatingText::new(command_description, FloatingTextMode::Description);
             self.spawn_float(description, 80, 80);
         }
     }
@@ -524,4 +573,27 @@ impl AppState {
         self.selection.select(Some(0));
         self.update_items();
     }
+
+    fn toggle_task_list_guide(&mut self) {
+        self.spawn_float(
+            FloatingText::new(ACTIONS_GUIDE.to_string(), FloatingTextMode::ActionsGuide),
+            80,
+            80,
+        );
+    }
+}
+
+#[cfg(feature = "tips")]
+const TIPS: &str = include_str!("../cool_tips.txt");
+
+#[cfg(feature = "tips")]
+fn get_random_tip() -> &'static str {
+    let tips: Vec<&str> = TIPS.lines().collect();
+    if tips.is_empty() {
+        return "";
+    }
+
+    let mut rng = rand::thread_rng();
+    let random_index = rng.gen_range(0..tips.len());
+    tips[random_index]
 }

@@ -9,7 +9,7 @@ choose_installation() {
     printf "%b\n" "1. ${YELLOW}Docker${RC}"
     printf "%b\n" "2. ${YELLOW}Docker Compose${RC}"
     printf "%b\n" "3. ${YELLOW}Both${RC}"
-    printf "Enter your choice [1-3]: "
+    printf "%b" "Enter your choice [1-3]: "
     read -r CHOICE
 
     case "$CHOICE" in
@@ -23,7 +23,7 @@ choose_installation() {
 install_docker() {
     printf "%b\n" "${YELLOW}Installing Docker...${RC}"
     case "$PACKAGER" in
-        apt-get | yum)
+        apt-get|nala)
             curl -fsSL https://get.docker.com | sh 
             ;;
         zypper)
@@ -37,7 +37,7 @@ install_docker() {
             "$ESCALATION_TOOL" systemctl start docker
             ;;
         *)
-            printf "${RED}Unsupported package manager. Please install Docker manually.${RC}\n"
+            printf "%b\n" "${RED}Unsupported package manager: ""$PACKAGER""${RC}"
             exit 1
             ;;
     esac
@@ -46,18 +46,17 @@ install_docker() {
 install_docker_compose() {
     printf "%b\n" "${YELLOW}Installing Docker Compose...${RC}"
     case "$PACKAGER" in
-        apt-get | yum)
-            "$ESCALATION_TOOL" "$PACKAGER" update
+        apt-get|nala)
             "$ESCALATION_TOOL" "$PACKAGER" install -y docker-compose-plugin
             ;;
         zypper)
             "$ESCALATION_TOOL" "$PACKAGER" --non-interactive install docker-compose
             ;;
         pacman)
-            "$ESCALATION_TOOL" "$PACKAGER" -S --noconfirm docker-compose
+            "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm docker-compose
             ;;
         *)
-            printf "${RED}Unsupported package manager. Please install Docker Compose manually.${RC}\n"
+            printf "%b\n" "${RED}Unsupported package manager: ""$PACKAGER""${RC}"
             exit 1
             ;;
     esac

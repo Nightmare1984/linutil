@@ -4,8 +4,8 @@
 
 # Function to install zsh
 installZsh() {
-  printf "%b\n" "${YELLOW}Installing Zsh...${RC}"
   if ! command_exists zsh; then
+    printf "%b\n" "${YELLOW}Installing Zsh...${RC}"
       case "$PACKAGER" in
           pacman)
               "$ESCALATION_TOOL" "$PACKAGER" -S --needed --noconfirm zsh
@@ -44,7 +44,7 @@ RPROMPT='%F{15}(%F{166}%D{%H:%M}%F{15})%f'
 EOL
 
   # Ensure /etc/zsh/zshenv sets ZDOTDIR to the user's config directory
-  echo 'export ZDOTDIR="$HOME/.config/zsh"' | "$ESCALATION_TOOL" tee -a /etc/zsh/zshenv
+  echo "export ZDOTDIR=\"$HOME/.config/zsh\"" | "$ESCALATION_TOOL" tee -a /etc/zsh/zshenv
 }
 
 checkEnv

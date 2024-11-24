@@ -9,12 +9,6 @@ description = "Discord is a versatile communication platform for gamers and comm
 script = "communication-apps/discord-setup.sh"
 task_list = "I"
 
-[[data.entries]]
-name = "Zoom"
-description = "Zoom is a widely-used video conferencing platform that allows users to host virtual meetings, webinars, and online collaboration with features like screen sharing and recording."
-script = "communication-apps/zoom-setup.sh"
-task_list = "I"
-
 [[data]]
 name = "Developer Tools"
 

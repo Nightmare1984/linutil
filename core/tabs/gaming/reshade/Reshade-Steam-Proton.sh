@@ -73,7 +73,7 @@ function downloadD3dcompiler_47() {
     [[ $1 -eq 32 ]] && hash="d6edb4ff0a713f417ebd19baedfe07527c6e45e84a6c73ed8c66a33377cc0aca" || hash="721977f36c008af2b637aedd3f1b529f3cfed6feb10f68ebe17469acb1934986"
     ffhash=$(sha256sum Firefox*.exe | cut -d\  -f1)
     [[ "$ffhash" != "$hash" ]] && printErr "(downloadD3dcompiler_47) Firefox integrity check failed. (Expected: $hash ; Calculated: $ffhash)"
-    7z -y e Firefox*.exe 1> /dev/null || printErr "(dowloadD3dcompiler_47) Failed to extract Firefox using 7z."
+    7z -y e Firefox*.exe 1> /dev/null || printErr "(downloadD3dcompiler_47) Failed to extract Firefox using 7z."
     cp d3dcompiler_47.dll "$MAIN_PATH/d3dcompiler_47.dll.$1" || printErr "(downloadD3dcompiler_47): Unable to find d3dcompiler_47.dll"
     removeTempDir
 }
@@ -93,7 +93,7 @@ function downloadReshade() {
     removeTempDir
 }
 
-SEPERATOR="------------------------------------------------------------------------------------------------"
+SEPARATOR="------------------------------------------------------------------------------------------------"
 COMMON_OVERRIDES="d3d8 d3d9 d3d11 ddraw dinput8 dxgi opengl32"
 REQUIRED_EXECUTABLES="7z curl git grep"
 XDG_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
@@ -130,7 +130,7 @@ mkdir -p "$MAIN_PATH/External_shaders"
 [[ $LASTUPDATED -gt 0 && $(($(date +%s)-LASTUPDATED)) -lt 14400 ]] && UPDATE_RESHADE=0
 [[ $UPDATE_RESHADE == 1 ]] && date +%s > LASTUPDATED
 
-echo -e "$SEPERATOR\nReShade installer/updater for Linux games using wine or proton.\n$SEPERATOR\n"
+echo -e "$SEPARATOR\nReShade installer/updater for Linux games using wine or proton.\n$SEPARATOR\n"
 
 function linkShaderFiles() {
     [[ ! -d $1 ]] && return
@@ -191,7 +191,7 @@ if [[ -n $SHADER_REPOS ]]; then
         done
     fi
 fi
-echo "$SEPERATOR"
+echo "$SEPARATOR"
 
 cd "$MAIN_PATH" || exit
 [[ -f LVERS ]] && LVERS=$(cat LVERS) || LVERS=0
@@ -200,7 +200,7 @@ if [[ $RESHADE_VERSION == latest ]]; then
     [[ ! $LVERS =~ Addon ]] && [[ $RESHADE_ADDON_SUPPORT -eq 1 ]] && UPDATE_RESHADE=1
 fi
 if [[ $FORCE_RESHADE_UPDATE_CHECK -eq 1 ]] || [[ $UPDATE_RESHADE -eq 1 ]] || [[ ! -e reshade/latest/ReShade64.dll ]] || [[ ! -e reshade/latest/ReShade32.dll ]]; then
-    echo -e "Checking for Reshade updates.\n$SEPERATOR"
+    echo -e "Checking for Reshade updates.\n$SEPARATOR"
     RHTML=$(curl --max-time 10 -sL "$RESHADE_URL")
     ALT_URL=0
     if [[ $? != 0 || $RHTML =~ '<h2>Something went wrong.</h2>' ]]; then
@@ -229,7 +229,7 @@ cd "$MAIN_PATH" || exit
 if [[ $RESHADE_VERSION != latest ]]; then
     [[ $RESHADE_ADDON_SUPPORT -eq 1 ]] && RESHADE_VERSION="${RESHADE_VERSION}_Addon"
     if [[ ! -f reshade/$RESHADE_VERSION/ReShade64.dll ]] || [[ ! -f reshade/$RESHADE_VERSION/ReShade32.dll ]]; then
-        echo -e "Downloading version $RESHADE_VERSION of ReShade.\n$SEPERATOR\n"
+        echo -e "Downloading version $RESHADE_VERSION of ReShade.\n$SEPARATOR\n"
         [[ -e reshade/$RESHADE_VERSION ]] && rm -rf "reshade/$RESHADE_VERSION"
         downloadReshade "$RESHADE_VERSION" "$RESHADE_URL/downloads/ReShade_Setup_$RESHADE_VERSION.exe"
     fi
@@ -275,12 +275,12 @@ if [[ $VULKAN_SUPPORT == 1 ]]; then
         else
             wine reg DELETE HKLM\\SOFTWARE\\Khronos\\Vulkan\\ImplicitLayers -f /reg:"$exeArch"
         fi
-        [[ $? == 0 ]] && echo "Done." || echo "An error has occured."
+        [[ $? == 0 ]] && echo "Done." || echo "An error has occurred."
         exit 0
     fi
 fi
 
-echo "Do you want to (i)nstall or (u)ninstall ReShade for a DirectX or OpenGL game?"
+echo "Do you want to install or uninstall ReShade for a DirectX or OpenGL game?"
 if [[ $(checkStdin "(i/u): " "^(i|u)$") == "u" ]]; then
     getGamePath
     echo "Unlinking ReShade files."
@@ -354,7 +354,7 @@ if [[ -f $MAIN_PATH/$LINK_PRESET ]]; then
     ln -is "$(realpath "$MAIN_PATH/$LINK_PRESET")" "$gamePath/$LINK_PRESET"
 fi
 
-echo -e "$SEPERATOR\nDone."
+echo -e "$SEPARATOR\nDone."
 gameEnvVar="WINEDLLOVERRIDES=\"d3dcompiler_47=n;$wantedDll=n,b\""
 echo -e "\e[40m\e[32mIf you're using Steam, right click the game, click properties, set the 'LAUNCH OPTIONS' to: \e[34m$gameEnvVar %command%"
 echo -e "\e[32mIf not, run the game with this environment variable set: \e[34m$gameEnvVar"

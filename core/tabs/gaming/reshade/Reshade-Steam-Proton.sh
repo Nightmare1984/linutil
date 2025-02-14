@@ -8,17 +8,19 @@ if ! which 7z &> /dev/null; then
     elif [[ -f /etc/redhat-release ]]; then
         sudo yum install -y p7zip
     elif [[ -f /etc/arch-release ]]; then
-        sudo pacman -Sy --noconfirm p7zip
+        sudo pacman -S --noconfirm p7zip
     else
         echo "Unsupported OS. Please install 7zip manually."
         exit 1
     fi
 fi
+
 function printErr() {
     removeTempDir
     echo -e "\e[40m\e[31mError: $1\nExiting.\e[0m"
     [[ -z $2 ]] && exit 1 || exit "$2"
 }
+
 function checkStdin() {
     while true; do
         read -rp "$1" userInput
@@ -28,6 +30,7 @@ function checkStdin() {
     done
     echo "$userInput"
 }
+
 function getGamePath() {
     echo 'Supply the folder path where the main executable (exe file) for the game is.'
     echo '(Control+c to exit)'
@@ -49,14 +52,17 @@ function getGamePath() {
         [[ $(checkStdin "(y/n) " "^(y|n)$") == "y" ]] && break
     done
 }
+
 function createTempDir() {
     tmpDir=$(mktemp -d)
     cd "$tmpDir" || printErr "Failed to create temp directory."
 }
+
 function removeTempDir() {
     cd "$MAIN_PATH" || exit
     [[ -d $tmpDir ]] && rm -rf "$tmpDir"
 }
+
 function downloadD3dcompiler_47() {
     ! [[ $1 =~ ^(32|64)$ ]] && printErr "(downloadD3dcompiler_47): Wrong system architecture."
     [[ -f $MAIN_PATH/d3dcompiler_47.dll.$1 ]] && return
@@ -71,6 +77,7 @@ function downloadD3dcompiler_47() {
     cp d3dcompiler_47.dll "$MAIN_PATH/d3dcompiler_47.dll.$1" || printErr "(downloadD3dcompiler_47): Unable to find d3dcompiler_47.dll"
     removeTempDir
 }
+
 function downloadReshade() {
     createTempDir
     curl -sLO "$2" || printErr "Could not download version $1 of ReShade."
@@ -85,6 +92,7 @@ function downloadReshade() {
     mv ./* "$resCurPath"
     removeTempDir
 }
+
 SEPERATOR="------------------------------------------------------------------------------------------------"
 COMMON_OVERRIDES="d3d8 d3d9 d3d11 ddraw dinput8 dxgi opengl32"
 REQUIRED_EXECUTABLES="7z curl git grep"
@@ -109,16 +117,21 @@ for REQUIRED_EXECUTABLE in $REQUIRED_EXECUTABLES; do
         exit 1
     fi
 done
+
 mkdir -p "$MAIN_PATH" || printErr "Unable to create directory '$MAIN_PATH'."
 cd "$MAIN_PATH" || exit
+
 mkdir -p "$RESHADE_PATH"
 mkdir -p "$MAIN_PATH/ReShade_shaders"
 mkdir -p "$MAIN_PATH/External_shaders"
+
 [[ -f LASTUPDATED ]] && LASTUPDATED=$(cat LASTUPDATED) || LASTUPDATED=0
 [[ ! $LASTUPDATED =~ ^[0-9]+$ ]] && LASTUPDATED=0
 [[ $LASTUPDATED -gt 0 && $(($(date +%s)-LASTUPDATED)) -lt 14400 ]] && UPDATE_RESHADE=0
 [[ $UPDATE_RESHADE == 1 ]] && date +%s > LASTUPDATED
+
 echo -e "$SEPERATOR\nReShade installer/updater for Linux games using wine or proton.\n$SEPERATOR\n"
+
 function linkShaderFiles() {
     [[ ! -d $1 ]] && return
     cd "$1" || return
@@ -132,11 +145,13 @@ function linkShaderFiles() {
         ln -s "$INFILE" "$OUTDIR"
     done
 }
+
 function mergeShaderDirs() {
     [[ $1 != ReShade_shaders && $1 != External_shaders ]] && return
     for dirName in Shaders Textures; do
         [[ $1 == "ReShade_shaders" ]] && dirPath=$(find "$MAIN_PATH/$1/$2" ! -path . -type d -name "$dirName") || dirPath="$MAIN_PATH/$1/$dirName"
         linkShaderFiles "$dirPath" "$dirName"
+        # Check if there are any extra directories inside the Shaders or Texture folder, and link them.
         while IFS= read -rd '' anyDir; do
             linkShaderFiles "$dirPath/$anyDir" "$dirName/$anyDir"
         done < <(find . ! -path . -type d -print0)
@@ -177,6 +192,7 @@ if [[ -n $SHADER_REPOS ]]; then
     fi
 fi
 echo "$SEPERATOR"
+
 cd "$MAIN_PATH" || exit
 [[ -f LVERS ]] && LVERS=$(cat LVERS) || LVERS=0
 if [[ $RESHADE_VERSION == latest ]]; then
@@ -233,6 +249,7 @@ if [[ $GLOBAL_INI != 0 ]] && [[ $GLOBAL_INI == ReShade.ini ]] && [[ ! -f $MAIN_P
         fi
     fi
 fi
+
 if [[ $VULKAN_SUPPORT == 1 ]]; then
     echo "Does the game use the Vulkan API?"
     if [[ $(checkStdin "(y/n): " "^(y|n)$") == "y" ]]; then
@@ -262,6 +279,7 @@ if [[ $VULKAN_SUPPORT == 1 ]]; then
         exit 0
     fi
 fi
+
 echo "Do you want to (i)nstall or (u)ninstall ReShade for a DirectX or OpenGL game?"
 if [[ $(checkStdin "(i/u): " "^(i|u)$") == "u" ]]; then
     getGamePath
@@ -281,6 +299,7 @@ if [[ $(checkStdin "(i/u): " "^(i|u)$") == "u" ]]; then
     echo -e "\e[40m\e[32mMake sure to remove or change the \e[34mWINEDLLOVERRIDES\e[32m environment variable.\e[0m"
     exit 0
 fi
+
 getGamePath
 echo "Do you want $0 to attempt to automatically detect the right dll files to use for ReShade?"
 [[ $(checkStdin "(y/n) " "^(y|n)$") == "y" ]] && wantedDll="auto" || wantedDll="manual"
@@ -309,7 +328,9 @@ if [[ $wantedDll == "manual" ]]; then
         [[ $ynCheck =~ ^(y|Y|yes|YES)$ ]] && break
     done
 fi
+
 downloadD3dcompiler_47 "$exeArch"
+
 echo "Linking ReShade files to game directory."
 [[ -L $gamePath/$wantedDll.dll ]] && unlink "$gamePath/$wantedDll.dll"
 if [[ $exeArch == 32 ]]; then
@@ -332,6 +353,7 @@ if [[ -f $MAIN_PATH/$LINK_PRESET ]]; then
     [[ -L $gamePath/$LINK_PRESET ]] && unlink "$gamePath/$LINK_PRESET"
     ln -is "$(realpath "$MAIN_PATH/$LINK_PRESET")" "$gamePath/$LINK_PRESET"
 fi
+
 echo -e "$SEPERATOR\nDone."
 gameEnvVar="WINEDLLOVERRIDES=\"d3dcompiler_47=n;$wantedDll=n,b\""
 echo -e "\e[40m\e[32mIf you're using Steam, right click the game, click properties, set the 'LAUNCH OPTIONS' to: \e[34m$gameEnvVar %command%"

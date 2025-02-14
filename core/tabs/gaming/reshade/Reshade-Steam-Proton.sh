@@ -269,7 +269,7 @@ if [[ $VULKAN_SUPPORT == 1 ]]; then
         echo "Specify if the game's EXE file architecture is 32 or 64 bits:"
         [[ $(checkStdin "(32/64) " "^(32|64)$") == 64 ]] && exeArch=64 || exeArch=32
         export WINEPREFIX="$WINEPREFIX"
-        echo "Do you want to (i)nstall or (u)ninstall ReShade?"
+        echo "Do you want to install or uninstall ReShade?"
         if [[ $(checkStdin "(i/u): " "^(i|u)$") == "i" ]]; then
             wine reg ADD HKLM\\SOFTWARE\\Khronos\\Vulkan\\ImplicitLayers /d 0 /t REG_DWORD /v "Z:\\home\\$USER\\$WINE_MAIN_PATH\\reshade\\$RESHADE_VERSION\\ReShade$exeArch.json" -f /reg:"$exeArch"
         else
